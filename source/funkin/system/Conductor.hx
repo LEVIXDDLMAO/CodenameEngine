@@ -1,5 +1,7 @@
 package funkin.system;
 
+import flixel.math.FlxMath;
+import openfl.Lib;
 import flixel.FlxState;
 import funkin.interfaces.IBeatReceiver;
 import flixel.FlxG;
@@ -71,20 +73,30 @@ class Conductor
 	public static var curBeatFloat:Float = 0;
 
 	
-	@:dox(hide) public static var lastSongPos:Float;
+	@:dox(hide) public static var lastSongPos:Float = 0;
+	@:dox(hide) public static var lastSongPosTime:Float = 0;
+	@:dox(hide) public static var speed:Float = 0;
+	@:dox(hide) public static var destSpeed:Float = 0;
 	@:dox(hide) public static var offset:Float = 0;
-
-	@:dox(hide) public static var safeZoneOffset:Float = 175; // is calculated in create(), is safeFrames in milliseconds
 
 	/**
 	 * Array of all BPM changes that have been mapped.
 	 */
 	public static var bpmChangeMap:Array<BPMChangeEvent> = [];
 
+	/**
+	 * Thread for multi-threaded audio syncing.
+	 */
+	#if ALLOW_MULTITHREADING
+	public static var syncThread:sys.thread.Thread;
+	public static var syncThreadTime:Null<Float> = null;
+	#end
+
 	@:dox(hide) public function new() {}
 
 	public static function reset() {
 		songPosition = lastSongPos = curBeatFloat = curStepFloat = curBeat = curStep = 0;
+		speed = 1;
 		bpmChangeMap = [];
 		changeBPM(0);
 	}
@@ -105,11 +117,12 @@ class Conductor
 		var curBPM:Float = song.bpm;
 		var totalSteps:Int = 0;
 		var totalPos:Float = 0;
-		for (i in 0...song.notes.length)
+		for (i=>notes in song.notes)
 		{
-			if(song.notes[i].changeBPM && song.notes[i].bpm != curBPM)
+			if (notes == null) continue;
+			if (notes.changeBPM && notes.bpm != curBPM)
 			{
-				curBPM = song.notes[i].bpm;
+				curBPM = notes.bpm;
 				var event:BPMChangeEvent = {
 					stepTime: totalSteps,
 					songTime: totalPos,
@@ -118,16 +131,58 @@ class Conductor
 				bpmChangeMap.push(event);
 			}
 
-			var deltaSteps:Int = song.notes[i].lengthInSteps;
+			var deltaSteps:Int = notes.lengthInSteps;
 			totalSteps += deltaSteps;
 			totalPos += ((60 / curBPM) * 1000 / 4) * deltaSteps;
 		}
 	}
 
+	private static var elapsed:Float;
+
 	public static function init() {
 		FlxG.signals.preUpdate.add(update);
 		FlxG.signals.preStateCreate.add(onStateSwitch);
 		reset();
+
+		#if ALLOW_MULTITHREADING
+		syncThread = ThreadUtil.createSafe(function() {
+			while(true) {
+				if (syncThreadTime == null)
+					syncThreadTime = Sys.time();
+
+				// if (FlxG.state != null && FlxG.state is MusicBeatState && cast(FlxG.state, MusicBeatState).cancelConductorUpdate) continue;
+
+				elapsed = -(syncThreadTime - (syncThreadTime = Sys.time()));
+
+				if (elapsed == 0) continue;
+
+				__updateSongPos(elapsed, syncThreadTime);
+			}
+		}, true);
+		#end
+	}
+
+	private static var __timeUntilUpdate:Float;
+	private static var __elapsedAL:Float;
+	private static function __updateSongPos(elapsed:Float, mainTime:Float) {
+		if (FlxG.sound.music == null || !FlxG.sound.music.playing) {
+			speed = destSpeed = 1;
+			lastSongPos = FlxG.sound.music != null ? FlxG.sound.music.time : 0;
+			lastSongPosTime = mainTime;
+			return;
+		}
+
+		var lastPos = lastSongPos;
+		if (lastSongPos != (lastSongPos = FlxG.sound.music.time)) {
+			// update conductor
+			__timeUntilUpdate = -(lastSongPosTime - (lastSongPosTime = mainTime));
+			__elapsedAL = (lastSongPos - lastPos);
+			destSpeed = FlxMath.bound(__timeUntilUpdate / __elapsedAL, 0.925, 1.075);
+			songPosition = lastSongPos;
+		} else {
+			songPosition += elapsed * 1000 * speed;
+		}
+		speed = FlxMath.lerp(speed, destSpeed, FlxMath.bound(elapsed, 0, 1));
 	}
 
 	private static function onStateSwitch(newState:FlxState) {
@@ -135,16 +190,11 @@ class Conductor
 			reset();
 	}
 	private static function update() {
-		var elapsed = FlxG.elapsed;
-
-		if (FlxG.sound.music == null || !FlxG.sound.music.playing) return;
 		if (FlxG.state != null && FlxG.state is MusicBeatState && cast(FlxG.state, MusicBeatState).cancelConductorUpdate) return;
-		if (lastSongPos != (lastSongPos = FlxG.sound.music.time)) {
-			// update conductor
-			songPosition = lastSongPos;
-		} else {
-			songPosition += elapsed * 1000;
-		}
+
+		#if !ALLOW_MULTITHREADING
+		__updateSongPos(FlxG.elapsed, Main.time);
+		#end
 
 		if (bpm > 0) {
 			// updates curbeat and stuff

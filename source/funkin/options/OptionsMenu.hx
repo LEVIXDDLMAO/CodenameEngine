@@ -28,18 +28,18 @@ class OptionsMenu extends MusicBeatState {
         },
         {
             name: 'Gameplay',
-            desc: 'Change Gameplay options such as Downscroll, Scroll Speed...',
+            desc: 'Change Gameplay options such as Downscroll, Scroll Speed, Naughtyness...',
             state: GameplayOptions
         },
         {
             name: 'Behaviour',
-            desc: 'Change Behaviour options such as Naughtyness, Flashing lights...',
+            desc: 'Change Behaviour options such as Flashing menus...',
             state: BehaviourOptions
         },
         {
-            name: 'Save Data',
+            name: 'Miscellaneous',
             desc: 'Use this menu to reset save data or engine settings.',
-            state: SaveDataOptions
+            state: MiscOptions
         },
         {
             name: 'Debug Options',
@@ -74,6 +74,8 @@ class OptionsMenu extends MusicBeatState {
         }
         add(alphabets);
         changeSelection(1);
+
+        CoolUtil.playMenuSong();
     }
 
     public override function update(elapsed:Float) {
@@ -101,7 +103,7 @@ class OptionsMenu extends MusicBeatState {
     
     public function changeSelection(change:Int) {
         if (change == 0) return;
-        CoolUtil.playMenuSFX(0, 0.4);
+        CoolUtil.playMenuSFX(0, 0.7);
         curSelected = FlxMath.wrap(curSelected + change, 0, options.length-1);
         alphabets.forEach(function(e) {
             e.alpha = 0.6;

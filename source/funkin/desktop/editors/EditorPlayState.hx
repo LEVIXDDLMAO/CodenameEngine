@@ -74,7 +74,9 @@ class EditorPlayState extends WindowContent {
     public override function update(elapsed:Float) {
         beforeStateShit();
         super.update(elapsed);
-        state.update(elapsed);
+        @:privateAccess
+        FlxG.cameras.update(elapsed);
+        state.tryUpdate(elapsed);
         afterStateShit();
     }
 

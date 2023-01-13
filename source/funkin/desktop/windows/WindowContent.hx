@@ -74,12 +74,16 @@ class WindowContent extends WindowGroup<FlxBasic> {
         this.height = height;
         this.winX = x;
         this.winY = y;
+        this.updateScrolls = false;
     }
 
     public function create() {
 
     }
 
+    public function onWindowResize(width:Int, height:Int) {
+        
+    }
     
     public function onDesktopSizeChange(width:Int, height:Int) {
         

@@ -21,6 +21,9 @@ typedef SwagSong =
 	var player2:String;
 	var gf:String;
 	var validScore:Bool;
+
+	// ADDITIONAL STUFF THAT MAY NOT BE PRESENT IN CHART
+	var ?maxHealth:Float;
 }
 
 class Song
@@ -28,7 +31,7 @@ class Song
 	public static function loadFromJson(songName:String, ?difficulty:String = "normal"):SwagSong
 	{
 		var assetPath = Paths.chart(songName, difficulty);
-		PlayState.fromMods = assetPath.startsWith("mods");
+		PlayState.fromMods = Paths.assetsTree.existsSpecific(assetPath, "TEXT", MODS);
 		var rawJson = Assets.getText(assetPath).trim();
 
 		while (!rawJson.endsWith("}"))

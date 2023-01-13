@@ -5,8 +5,8 @@ import openfl.Assets;
 import hscript.*;
 
 class HScript extends Script {
-    var interp:Interp;
-    var expr:Expr;
+    public var interp:Interp;
+    public var expr:Expr;
 
     public override function onCreate(path:String) {
         super.onCreate(path);
@@ -21,7 +21,12 @@ class HScript extends Script {
         interp.staticVariables = Script.staticVariables;
         interp.allowStaticVariables = interp.allowPublicVariables = true;
 
-        interp.variables.set("trace", this.trace);
+        interp.variables.set("trace", Reflect.makeVarArgs((args) -> {
+            var v:String = Std.string(args.shift());
+            for (a in args) v += ", " + Std.string(a);
+            this.trace(v);
+        }));
+
         try {
             expr = parser.parseString(code, fileName);
         } catch(e:Error) {
@@ -48,7 +53,10 @@ class HScript extends Script {
     }
 
     public override function onLoad() {
-        if (expr != null) interp.execute(expr);
+        if (expr != null) {
+            interp.execute(expr);
+            call("new", []);
+        }
     }
 
     public override function reload() {
@@ -63,11 +71,16 @@ class HScript extends Script {
         }
         var oldParent = interp.scriptObject;
         onCreate(path);
+
+        for(k=>e in Script.getDefaultVariables(this))
+            set(k, e);
+
         load();
         setParent(oldParent);
-        for(k=>e in savedVariables) {
+
+        for(k=>e in savedVariables)
             interp.variables.set(k, e);
-        }
+
         interp.allowStaticVariables = interp.allowPublicVariables = true;
     }
 
@@ -93,7 +106,7 @@ class HScript extends Script {
         var posInfo = interp.posInfos();
         Logs.traceColored([
             Logs.logText('${fileName}:${posInfo.lineNumber}: ', GREEN),
-            Logs.logText(Std.string(v))
+            Logs.logText(Std.isOfType(v, String) ? v : Std.string(v))
         ], TRACE);
     }
 

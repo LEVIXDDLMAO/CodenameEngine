@@ -2,7 +2,6 @@ package funkin.game;
 
 import flixel.FlxG;
 import flixel.FlxState;
-import funkin.system.XMLUtil;
 import flixel.FlxSprite;
 import openfl.utils.Assets;
 import haxe.xml.Access;
@@ -34,8 +33,7 @@ class Stage extends FlxBasic implements IBeatReceiver {
         try {
             if (Assets.exists(stagePath)) stageXML = new Access(Xml.parse(Assets.getText(stagePath)).firstElement());
         } catch(e) {
-            // TODO: handler
-            trace(e.details());
+            Logs.trace('Couldn\'t load stage "$stage": ${e.message}', ERROR);
         }
         if (stageXML != null) {
 
@@ -57,7 +55,7 @@ class Stage extends FlxBasic implements IBeatReceiver {
                     case "sprite" | "spr" | "sparrow":
                         if (!node.has.sprite || !node.has.name || !node.has.x || !node.has.y) continue;
 
-                        var spr = XMLUtil.createSpriteFromXML(node, spritesParentFolder);
+                        var spr = XMLUtil.createSpriteFromXML(node, spritesParentFolder, BEAT);
 
                         if (!node.has.zoomfactor && PlayState.instance != null)
                             spr.initialZoom = PlayState.instance.defaultCamZoom;

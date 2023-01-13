@@ -102,12 +102,12 @@ class OptionsScreen extends MusicBeatState {
         
         FlxTransitionableState.skipNextTransOut = true;
         FlxTransitionableState.skipNextTransIn = true;
-        FlxG.switchState(new OptionsMenu(false));
+        FlxG.switchState(new OptionsMenu());
     }
 
     public function changeSelection(change:Int) {
         if (change == 0 && curSelected != -1) return;
-        CoolUtil.playMenuSFX(0);
+        CoolUtil.playMenuSFX(0, 0.7);
         if (curSelected != (curSelected = FlxMath.wrap(curSelected + change, 0, options.length - 1))) {
             for(e in options)
                 e.selected = false;
@@ -118,7 +118,11 @@ class OptionsScreen extends MusicBeatState {
     }
 
     public function updateDesc() {
-        descText.text = '/    ${options[curSelected].desc}    /';
+        updateDescText(options[curSelected].desc);
+    }
+
+    public function updateDescText(text:String) {
+        descText.text = '/    ${text}    /';
         @:privateAccess descText.regenGraphic(); //updates the thing
 
         descDrop.loadFrame(descText.frame);
@@ -134,5 +138,6 @@ class OptionsScreen extends MusicBeatState {
     public override function destroy() {
         super.destroy();
         instance = null;
+        scrollDest.put();
     }
 }

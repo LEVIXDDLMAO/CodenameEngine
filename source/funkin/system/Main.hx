@@ -1,18 +1,19 @@
 package funkin.system;
 
-import funkin.away3d.Flx3DView;
+import funkin.desktop.DesktopMain;
 import openfl.utils.AssetLibrary;
 import openfl.utils.AssetCache;
 import openfl.text.TextFormat;
 import flixel.system.ui.FlxSoundTray;
 import funkin.windows.WindowsAPI;
+import funkin.menus.BetaWarningState;
 import funkin.menus.TitleState;
 import funkin.game.Highscore;
 import funkin.options.Options;
 import flixel.FlxGame;
 import flixel.FlxState;
 import openfl.Assets;
-import openfl.Lib;
+import flash.Lib;
 import openfl.display.FPS;
 import openfl.display.Sprite;
 import openfl.events.Event;
@@ -23,12 +24,11 @@ import flixel.addons.transition.FlxTransitionSprite.GraphicTransTileDiamond;
 import flixel.addons.transition.TransitionData;
 import flixel.math.FlxPoint;
 import flixel.math.FlxRect;
-#if desktop
-import funkin.system.Discord.DiscordClient;
-import sys.thread.Thread;
-#end
 import lime.app.Application;
 
+#if ALLOW_MULTITHREADING
+import sys.thread.Thread;
+#end
 #if sys
 import sys.io.File;
 #end
@@ -37,25 +37,26 @@ import funkin.mods.ModsFolder;
 
 class Main extends Sprite
 {
-	// TODO: CREDIT SMOKEY FOR ATLAS STUFF!!
-	
+	public static var instance:Main;
+
 	var gameWidth:Int = 1280; // Width of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var gameHeight:Int = 720; // Height of the game in pixels (might be less / more in actual pixels depending on your zoom).
-	var initialState:Class<FlxState> = TitleState; // The FlxState the game starts with.
 	var zoom:Float = -1; // If -1, zoom is automatically calculated to fit the window dimensions.
 	var framerate:Int = 120; // How many frames per second the game should run at.
 	var skipSplash:Bool = true; // Whether to skip the flixel splash screen that appears in release mode.
 	var startFullscreen:Bool = false; // Whether to start the game in fullscreen on desktop targets
 
+	public static var time:Int = 0;
+
 	// You can pretty much ignore everything from here on - your code should go in your states.
 
-	#if sys
+	#if ALLOW_MULTITHREADING
 	public static var gameThreads:Array<Thread> = [];
 	#end
 
 	public static function main():Void
 	{
-		Lib.current.addChild(new Main());
+		Lib.current.addChild(instance = new Main());
 	}
 
 	public function new()
@@ -96,15 +97,12 @@ class Main extends Sprite
 			gameHeight = Math.ceil(stageHeight / zoom);
 		}
 
-		#if !debug
-		initialState = TitleState;
-		#end
-
 
 		addChild(new FlxGame(gameWidth, gameHeight, null, zoom, framerate, framerate, skipSplash, startFullscreen));
 		loadGameSettings();
-		FlxG.switchState(new TitleState());
-		
+		// FlxG.switchState(new TitleState());
+		FlxG.switchState(new funkin.menus.BetaWarningState());
+
 		#if !mobile
 		addChild(new FramerateField(10, 3, 0xFFFFFF));
 		#end
@@ -112,13 +110,13 @@ class Main extends Sprite
 
 	@:dox(hide)
 	public static var audioDisconnected:Bool = false;
-	
+
 	public static var changeID:Int = 0;
 
-	
+
 	private static var __threadCycle:Int = 0;
 	public static function execAsync(func:Void->Void) {
-		#if sys
+		#if ALLOW_MULTITHREADING
 		var thread = gameThreads[(__threadCycle++) % gameThreads.length];
 		thread.events.run(func);
 		#else
@@ -126,47 +124,66 @@ class Main extends Sprite
 		#end
 	}
 
+	private static function getTimer():Int {
+		return time = Lib.getTimer();
+	}
+
 	public function loadGameSettings() {
-		#if sys
+		@:privateAccess
+		FlxG.game.getTimer = getTimer;
+		#if ALLOW_MULTITHREADING
 		for(i in 0...4)
 			gameThreads.push(Thread.createWithEventLoop(function() {Thread.current().events.promise();}));
 		#end
 		Paths.assetsTree = new AssetsLibraryList();
 
+		#if UPDATE_CHECKING
+		funkin.updating.UpdateUtil.init();
+		#end
 		CrashHandler.init();
 		Logs.init();
 		Paths.init();
 		ModsFolder.init();
-		Flx3DView.init();
-		#if MOD_SUPPORT
-		ModsFolder.switchMod("introMod");
+		DesktopMain.init();
+		DiscordUtil.init();
+		#if ALLOW_MULTITASKING
+		funkin.multitasking.MultiTaskingHandler.init();
 		#end
-		
 		#if GLOBAL_SCRIPT
 		funkin.scripting.GlobalScript.init();
 		#end
-		
+
 		#if sys
 		if (Sys.args().contains("-livereload")) {
-			#if USE_SOURCE_ASSETS
-			trace("Used lime test windows. Switching into source assets.");
-			Paths.assetsTree.addLibrary(ModsFolder.loadLibraryFromFolder('assets', './../../../../assets/', true));
+			var pathBack = #if windows
+				"../../../../"
+			#elseif mac
+				"../../../../../../../"
 			#else
-			Assets.registerLibrary('assets', Paths.assetsTree.base);
+				""
+			#end;
+
+			#if USE_SOURCE_ASSETS
+			#if windows
+			trace("Used lime test windows. Switching into source assets.");
+			#elseif mac
+			trace("Used lime test mac. Switching into source assets.");
+			#elseif linux
+			trace("Used lime test linux. Switching into source assets.");
+			#end
+			Paths.assetsTree.addLibrary(ModsFolder.loadLibraryFromFolder('assets', './${pathBack}assets/', true));
+			Paths.assetsTree.sourceLibsAmount++;
 			#end
 
-			var buildNum:Int = Std.parseInt(File.getContent("./../../../../buildnumber.txt"));
+			var buildNum:Int = Std.parseInt(File.getContent('./${pathBack}buildnumber.txt'));
 			buildNum++;
-			File.saveContent("./../../../../buildnumber.txt", Std.string(buildNum));
+			File.saveContent('./${pathBack}buildnumber.txt', Std.string(buildNum));
 		} else {
 			#if USE_ADAPTED_ASSETS
 			Paths.assetsTree.addLibrary(ModsFolder.loadLibraryFromFolder('assets', './assets/', true));
-			#else
-			Assets.registerLibrary('assets', Paths.assetsTree.base);
+			Paths.assetsTree.sourceLibsAmount++;
 			#end
 		}
-		#else
-		Assets.registerLibrary('assets', Paths.assetsTree.base);
 		#end
 
 
@@ -176,7 +193,7 @@ class Main extends Sprite
 		Assets.registerLibrary('default', lib);
 
 		funkin.options.PlayerSettings.init();
-		FlxG.save.bind('Save');
+		FlxG.save.bind('Codename Engine');
 		Options.load();
 		Highscore.load();
 
@@ -187,17 +204,12 @@ class Main extends Sprite
 		Conductor.init();
 		AudioSwitchFix.init();
 		WindowsAPI.setDarkMode(true);
-
-		
-		#if desktop
-		DiscordClient.initialize();
-		
-		Application.current.onExit.add (function (exitCode) {
-			DiscordClient.shutdown();
-		 });
-		#end
-		
+		EventManager.init();
 		FlxG.signals.preStateCreate.add(onStateSwitch);
+
+		#if MOD_SUPPORT
+		ModsFolder.switchMod("introMod");
+		#end
 
 		initTransition();
 	}
@@ -220,18 +232,18 @@ class Main extends Sprite
 			{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
 	}
 
-    private static function onStateSwitch(newState:FlxState) {
-        // manual asset clearing since base openfl one doesnt clear lime one
-        // doesnt clear bitmaps since flixel fork does it auto
-        
-        var cache = cast(Assets.cache, AssetCache);
-        for (key=>font in cache.font)
-            cache.removeFont(key);
-        for (key=>sound in cache.sound)
-            cache.removeSound(key);
+	private static function onStateSwitch(newState:FlxState) {
+		// manual asset clearing since base openfl one doesnt clear lime one
+		// doesnt clear bitmaps since flixel fork does it auto
+
+		var cache = cast(Assets.cache, AssetCache);
+		for (key=>font in cache.font)
+			cache.removeFont(key);
+		for (key=>sound in cache.sound)
+			cache.removeSound(key);
 
 		Paths.assetsTree.clearCache();
 
-
-    }
+		MemoryUtil.clearMajor();
+	}
 }

@@ -15,19 +15,12 @@ class NoteUpdateEvent extends CancellableEvent {
     /**
      * Time elapsed since last frame
      */
-    public var elapsed:Float;
+    public var elapsed:Null<Float>;
 
     /**
      * Note's strum (can be changed)
      */
     public var strum:Strum;
-
-    public function new(note:Note, elapsed:Float, strum:Strum) {
-        super();
-        this.note = note;
-        this.elapsed = elapsed;
-        this.strum = strum;
-    }
 
     /**
      * Cancels the hit window update.

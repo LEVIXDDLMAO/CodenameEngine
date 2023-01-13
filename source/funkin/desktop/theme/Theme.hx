@@ -39,6 +39,39 @@ class Theme {
     public var pressedButton:ThemeData = new ThemeData();
     public var disabledButton:ThemeData = new ThemeData();
 
+    /**
+     * CHECKBOX
+     */
+    public var checkbox:ThemeData = new ThemeData();
+
+    /**
+     * TABS
+     */
+    public var tabBackground:ThemeData = new ThemeData();
+    public var tabButtonSelected:ThemeData = new ThemeData();
+    public var tabButtonUnselected:ThemeData = new ThemeData();
+    public var tabButtonHover:ThemeData = new ThemeData();
+    public var tabButtonPressed:ThemeData = new ThemeData();
+
+    /**
+     * CONTEXT MENU
+     */
+    public var contextBackground:ThemeData = new ThemeData();
+    public var contextOption:ThemeData = new ThemeData();
+
+    /**
+     * MENU BAR
+     */
+    public var menuBar:ThemeData = new ThemeData();
+
+    /**
+     * THEME
+     */
+    public var textbox:ThemeData = new ThemeData();
+    public var textboxHover:ThemeData = new ThemeData();
+    public var textboxPressed:ThemeData = new ThemeData();
+    public var textboxFocused:ThemeData = new ThemeData();
+
     public function new(content:String) {
         try {
             var access = new Access(Xml.parse(content).firstElement());
@@ -60,6 +93,8 @@ class Theme {
                 if (element.has.right) data.right = Std.parseFloat(element.att.right).getDefault(0);
                 if (element.has.top) data.top = Std.parseFloat(element.att.top).getDefault(0);
                 if (element.has.bottom) data.bottom = Std.parseFloat(element.att.bottom).getDefault(0);
+                if (element.has.width) data.width = Std.parseFloat(element.att.width).getDefault(data.width);
+                if (element.has.height) data.height = Std.parseFloat(element.att.height).getDefault(data.height);
                 if (element.has.size) {
                     var split = element.att.size.split(",");
                     data.size.set(
@@ -89,16 +124,19 @@ class Theme {
 class ThemeData implements IFlxDestroyable {
     public var sprite:String = "";
 
-    public var font:String = "";
-    public var fontSize:Float = 12;
+    public var font:String = null;
+    public var fontSize:Null<Float> = null;
 
-    public var textColor:FlxColor = FlxColor.BLACK;
+    public var textColor:Null<FlxColor> = null;
     public var color:FlxColor = FlxColor.WHITE;
 
     public var left:Float = 4;
     public var bottom:Float = 4;
     public var top:Float = 4;
     public var right:Float = 4;
+
+    public var width:Float = 4;
+    public var height:Float = 4;
 
     public var margin:FlxPoint = FlxPoint.get(0, 0);
     public var size:FlxPoint = FlxPoint.get(20, 20);
@@ -108,17 +146,11 @@ class ThemeData implements IFlxDestroyable {
     public function new() {}
 
     public function destroy() {
-        if (margin != null) {
+        if (margin != null)
             margin.put();
-            margin = null;
-        }
-        if (size != null) {
+        if (size != null)
             size.put();
-            size = null;
-        }
-        if (offset != null) {
+        if (offset != null)
             offset.put();
-            offset = null;
-        }
     }
 }

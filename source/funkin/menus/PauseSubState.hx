@@ -1,5 +1,6 @@
 package funkin.menus;
 
+import funkin.options.OptionsMenu;
 import flixel.FlxCamera;
 import funkin.scripting.events.PauseCreationEvent;
 import funkin.scripting.events.NameEvent;
@@ -17,6 +18,7 @@ import flixel.tweens.FlxTween;
 import flixel.util.FlxColor;
 import funkin.ui.Alphabet;
 import funkin.options.keybinds.KeybindsOptions;
+import funkin.menus.StoryMenuState;
 
 class PauseSubState extends MusicBeatSubstate
 {
@@ -43,7 +45,7 @@ class PauseSubState extends MusicBeatSubstate
 		pauseScript.setParent(this);
         pauseScript.load();
 
-		var event = new PauseCreationEvent('breakfast', menuItems);
+		var event = EventManager.get(PauseCreationEvent).recycle('breakfast', menuItems);
 		pauseScript.call('create', [event]);
 
 		menuItems = event.options;
@@ -56,7 +58,9 @@ class PauseSubState extends MusicBeatSubstate
 
 		if (__cancelDefault = event.cancelled) return;
 
-		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
+		var bg:FlxSprite = new FlxSprite().makeGraphic(1, 1, FlxColor.BLACK);
+		bg.scale.set(FlxG.width, FlxG.height);
+		bg.updateHitbox();
 		bg.alpha = 0;
 		bg.scrollFactor.set();
 		add(bg);
@@ -101,6 +105,8 @@ class PauseSubState extends MusicBeatSubstate
 		FlxG.cameras.add(camera, false);
 
 		pauseScript.call("postCreate");
+
+		PlayState.instance.updateDiscordPresence();
 	}
 
 	override function update(elapsed:Float)
@@ -127,7 +133,7 @@ class PauseSubState extends MusicBeatSubstate
 	}
 
 	public function selectOption() {
-		var event = new NameEvent(menuItems[curSelected]);
+		var event = EventManager.get(NameEvent).recycle(menuItems[curSelected]);
 		pauseScript.call("onSelectOption", [event]);
 
 		if (event.cancelled) return;
@@ -143,14 +149,19 @@ class PauseSubState extends MusicBeatSubstate
 			case "Change Controls":
 				persistentDraw = false;
 				openSubState(new KeybindsOptions());
+			case "Options":
+				FlxG.switchState(new OptionsMenu(true));
 			case "Exit to menu":
-				FlxG.switchState(new MainMenuState());
+				FlxG.switchState(PlayState.isStoryMode ? new StoryMenuState() : new FreeplayState());
+				CoolUtil.playMenuSong();		
 		}
 	}
 	override function destroy()
 	{
-		pauseScript.call("destroy");
+		FlxG.cameras.remove(camera, true);
+		pauseScript.call("onDestroy");
 		if (pauseMusic != null) pauseMusic.destroy();
+		pauseScript.destroy();
 
 		super.destroy();
 	}

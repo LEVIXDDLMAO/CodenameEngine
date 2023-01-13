@@ -110,14 +110,14 @@ class Paths
 
 	inline static public function voices(song:String, difficulty:String = "normal")
 	{
-		var diff = getPath('songs/${song.toLowerCase()}/Voices-$difficulty.$SOUND_EXT', MUSIC, null);
-		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/Voices.$SOUND_EXT', MUSIC, null);
+		var diff = getPath('songs/${song.toLowerCase()}/song/Voices-$difficulty.$SOUND_EXT', MUSIC, null);
+		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/song/Voices.$SOUND_EXT', MUSIC, null);
 	}
 
 	inline static public function inst(song:String, difficulty:String = "normal")
 	{
-		var diff = getPath('songs/${song.toLowerCase()}/Inst-$difficulty.$SOUND_EXT', MUSIC, null);
-		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/Inst.$SOUND_EXT', MUSIC, null);
+		var diff = getPath('songs/${song.toLowerCase()}/song/Inst-$difficulty.$SOUND_EXT', MUSIC, null);
+		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/song/Inst.$SOUND_EXT', MUSIC, null);
 	}
 
 	inline static public function image(key:String, ?library:String, checkForAtlas:Bool = false)
@@ -148,17 +148,13 @@ class Paths
 
 		var difficultyEnd = (difficulty == "normal") ? "" : '-$difficulty';
 
+		// songs/your-song/charts/hard.json
+		var p = getPath('songs/$song/charts/$difficulty.json', TEXT, null);
+		if (OpenFlAssets.exists(p)) return p;
+
 		// data/charts/your-song/hard.json
 		var p = json('charts/$song/$difficulty');
 		if (OpenFlAssets.exists(p)) return p;
-
-		// data/charts/your-song/your-song-hard.json
-		var p2 = json('charts/$song/$song$difficultyEnd');
-		if (OpenFlAssets.exists(p2)) return p2;
-
-		// data/your-song/your-song-hard.json (default old format)
-		p2 = json('$song/$song$difficultyEnd');
-		if (OpenFlAssets.exists(p2)) return p2;
 
 		return p; // returns the normal one so that it shows the correct path in the error message.
 	}
@@ -174,6 +170,22 @@ class Paths
 
 	inline static public function obj(key:String) {
 		return getPath('models/$key.obj', BINARY, null);
+	}
+
+	inline static public function dae(key:String) {
+		return getPath('models/$key.dae', BINARY, null);
+	}
+
+	inline static public function md2(key:String) {
+		return getPath('models/$key.md2', BINARY, null);
+	}
+
+	inline static public function md5(key:String) {
+		return getPath('models/$key.md5', BINARY, null);
+	}
+
+	inline static public function awd(key:String) {
+		return getPath('models/$key.awd', BINARY, null);
 	}
 
 	inline static public function getSparrowAtlas(key:String, ?library:String)
@@ -205,10 +217,19 @@ class Paths
 		return FlxAtlasFrames.fromSpriteSheetPacker('$key.png', '$key.txt');
 	}
 
-	static public function getFolderContent(key:String, includeSource:Bool = true, addPath:Bool = false, scanSource:Bool = false):Array<String> {
+	static public function getFolderDirectories(key:String, addPath:Bool = false, source:funkin.system.AssetsLibraryList.AssetSource = BOTH):Array<String> {
+		if (!key.endsWith("/")) key += "/";
+		var content = assetsTree.getFolders('assets/$key', source);
+		if (addPath) {
+			for(k=>e in content)
+				content[k] = '$key$e';
+		}
+		return content;
+	}
+	static public function getFolderContent(key:String, addPath:Bool = false, source:funkin.system.AssetsLibraryList.AssetSource = BOTH):Array<String> {
 		// designed to work both on windows and web
 		if (!key.endsWith("/")) key += "/";
-		var content = assetsTree.getFiles('assets/$key');
+		var content = assetsTree.getFiles('assets/$key', source);
 		if (addPath) {
 			for(k=>e in content)
 				content[k] = '$key$e';

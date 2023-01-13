@@ -1,25 +1,22 @@
 package funkin.system;
 
-import sys.thread.Thread;
-import flixel.FlxBasic;
 import funkin.scripting.DummyScript;
 import flixel.FlxState;
 import flixel.FlxSubState;
 import funkin.scripting.events.*;
 import funkin.scripting.Script;
 import funkin.interfaces.IBeatReceiver;
-import funkin.system.Conductor.BPMChangeEvent;
 import funkin.system.Conductor;
 import flixel.FlxG;
-import flixel.addons.transition.FlxTransitionableState;
 import flixel.addons.ui.FlxUIState;
-import flixel.math.FlxRect;
 import flixel.math.FlxMath;
-import flixel.util.FlxTimer;
 import funkin.options.PlayerSettings;
 
 class MusicBeatState extends FlxUIState implements IBeatReceiver
 {
+	#if ALLOW_MULTITASKING
+	public var parentWindow:funkin.multitasking.StateWindow;
+	#end
 	private var lastBeat:Float = 0;
 	private var lastStep:Float = 0;
 
@@ -66,7 +63,7 @@ class MusicBeatState extends FlxUIState implements IBeatReceiver
 	public var controls(get, never):Controls;
 
 	/**
-	 * Current injected script attached to the state. To add one, create a file at path "scripts/stateName" (ex: "scripts/")
+	 * Current injected script attached to the state. To add one, create a file at path "data/states/stateName" (ex: data/states/FreeplayState)
 	 */
 	public var stateScript:Script;
 
@@ -181,24 +178,31 @@ class MusicBeatState extends FlxUIState implements IBeatReceiver
 	 * SCRIPTING STUFF 
 	 */
 	public override function openSubState(subState:FlxSubState) {
-		var e = event("onOpenSubState", new StateEvent(subState));
+		var e = event("onOpenSubState", EventManager.get(StateEvent).recycle(subState));
 		if (!e.cancelled)
 			super.openSubState(subState);
 	}
 
 	public override function onResize(w:Int, h:Int) {
 		super.onResize(w, h);
-		event("onResize", new ResizeEvent(w, h));
+		event("onResize", EventManager.get(ResizeEvent).recycle(w, h, null, null));
 	}
 
 	public override function destroy() {
-		super.destroy();
+		if (parentWindow == null)
+			super.destroy();
+		
 		call("onDestroy");
-		stateScript.destroy();
+		if (stateScript != null)
+			stateScript.destroy();
+	}
+
+	public override function draw() {
+		super.draw();
 	}
 
 	public override function switchTo(nextState:FlxState) {
-		var e = event("onStateSwitch", new StateEvent(nextState));
+		var e = event("onStateSwitch", EventManager.get(StateEvent).recycle(nextState));
 		if (e.cancelled)
 			return false;
 		return super.switchTo(nextState);

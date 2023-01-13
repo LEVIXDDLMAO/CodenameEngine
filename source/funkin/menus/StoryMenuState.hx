@@ -3,7 +3,6 @@ package funkin.menus;
 import funkin.scripting.events.*;
 import flixel.util.FlxTimer;
 import flixel.math.FlxPoint;
-import funkin.system.XMLUtil;
 import flixel.graphics.frames.FlxFramesCollection;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import funkin.game.Highscore;
@@ -47,9 +46,8 @@ class StoryMenuState extends MusicBeatState {
     public override function create() {
         super.create();
         loadXMLs();
-        
         persistentUpdate = persistentDraw = true;
-
+        
         // WEEK INFO
         blackBar = new FlxSprite(0, 0).makeGraphic(1, 1, 0xFFFFFFFF);
         blackBar.color = 0xFF000000;
@@ -123,6 +121,8 @@ class StoryMenuState extends MusicBeatState {
         }
 
         changeWeek(0, true);
+        
+		DiscordUtil.changePresence("In the Menus", null);
     }
 
     var __lastDifficultyTween:FlxTween;
@@ -162,7 +162,7 @@ class StoryMenuState extends MusicBeatState {
     public function changeWeek(change:Int, force:Bool = false) {
         if (change == 0 && !force) return;
 
-        var event = event("onChangeWeek", new MenuChangeEvent(curWeek, FlxMath.wrap(curWeek + change, 0, weeks.length-1), change));
+        var event = event("onChangeWeek", EventManager.get(MenuChangeEvent).recycle(curWeek, FlxMath.wrap(curWeek + change, 0, weeks.length-1), change));
         if (event.cancelled) return;
         curWeek = event.value;
         
@@ -182,7 +182,7 @@ class StoryMenuState extends MusicBeatState {
     public function changeDifficulty(change:Int, force:Bool = false) {
         if (change == 0 && !force) return;
 
-        var event = event("onChangeDifficulty", new MenuChangeEvent(curDifficulty, FlxMath.wrap(curDifficulty + change, 0, weeks[curWeek].difficulties.length-1), change));
+        var event = event("onChangeDifficulty", EventManager.get(MenuChangeEvent).recycle(curDifficulty, FlxMath.wrap(curDifficulty + change, 0, weeks[curWeek].difficulties.length-1), change));
         if (event.cancelled) return;
         curDifficulty = event.value;
 
@@ -219,7 +219,7 @@ class StoryMenuState extends MusicBeatState {
     public function selectWeek() {
         
 
-        var event = event("onWeekSelect", new WeekSelectEvent(weeks[curWeek], weeks[curWeek].difficulties[curDifficulty], curWeek, curDifficulty));
+        var event = event("onWeekSelect", EventManager.get(WeekSelectEvent).recycle(weeks[curWeek], weeks[curWeek].difficulties[curDifficulty], curWeek, curDifficulty));
         if (event.cancelled) return;
 
         canSelect = false;

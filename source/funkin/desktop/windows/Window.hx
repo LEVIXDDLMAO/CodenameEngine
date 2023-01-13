@@ -1,5 +1,6 @@
 package funkin.desktop.windows;
 
+import flixel.math.FlxRect;
 import flixel.addons.ui.FlxUIText;
 import flixel.group.FlxGroup.FlxTypedGroup;
 import flixel.FlxBasic;
@@ -40,7 +41,7 @@ class Window extends FlxTypedGroup<FlxBasic> {
 
     public var content:WindowContent;
 
-    public var caption:FlxUIText;
+    public var caption:WindowText;
     public var icon:FlxSprite;
     public var dragHitbox:WindowDragHitbox;
 
@@ -91,20 +92,27 @@ class Window extends FlxTypedGroup<FlxBasic> {
         add(windowFrame);
         add(windowInactiveFrame);
 
-        caption = new FlxUIText(24, 4, 0, content.title);
+        caption = new WindowText(24, 4, 0, content.title);
+        caption.applyFontSettings(DesktopMain.theme.captionActive);
+        caption.borderSize = 1.25;
+        caption.borderStyle = OUTLINE;
+        caption.borderColor = 0x63000000;
+
         captionButtons = new FlxTypedSpriteGroup<WindowCaptionButton>();
         for(i in 0...4) {
             var btn = new WindowCaptionButton(this, i);
             btn.x = (i+1) * -(DesktopMain.theme.captionButtons.size.x + DesktopMain.theme.captionButtons.margin.x);
             captionButtons.add(btn);
         }
+
+        caption.y = (DesktopMain.theme.captionActive.top - caption.height) / 2;
         add(caption);
 
         dragHitbox = new WindowDragHitbox(DesktopMain.theme.captionActive.left, DesktopMain.theme.captionActive.left, DesktopMain.theme.captionActive.left, DesktopMain.theme.captionActive.top);
         dragHitbox.parent = this;
         add(dragHitbox);
 
-        icon = new FlxSprite(4, 4);
+        icon = new FlxSprite(4, (DesktopMain.theme.captionActive.top - 16) / 2);
         add(icon);
         loadIcon(content.icon);
 
@@ -245,20 +253,20 @@ class Window extends FlxTypedGroup<FlxBasic> {
         windowInactiveFrame.visible = !(windowFrame.visible = focused);
         var i = members.length;
         
-        var shouldCancel = DesktopMain.instance.mouseInput.overlapsRect(this, new Rectangle(0, 0, windowCaptionCamera.width, windowCaptionCamera.height), windowCaptionCamera);
+        var shouldCancel = DesktopMain.mouseInput.overlapsRect(this, new FlxRect(0, 0, windowCaptionCamera.width, windowCaptionCamera.height), windowCaptionCamera);
 
         
 
         if (curDialog != null && curDialog.exists) {
             if (shouldCancel) {
-                if (DesktopMain.instance.mouseInput.justPressed) {
+                if (DesktopMain.mouseInput.justPressed) {
                     // TODO: sounds
                     DesktopMain.instance.focusWindow(curDialog);
                 }
-                DesktopMain.instance.mouseInput.cancel();
+                DesktopMain.mouseInput.cancel();
             }
             return;
-        } else if (shouldCancel && DesktopMain.instance.mouseInput.justPressed)
+        } else if (shouldCancel && DesktopMain.mouseInput.justPressed)
             DesktopMain.instance.focusWindow(this);
         // updates them backwards!!
         while(i > 0) {
@@ -268,7 +276,7 @@ class Window extends FlxTypedGroup<FlxBasic> {
             spr.update(elapsed);
         }
 
-        if (shouldCancel) DesktopMain.instance.mouseInput.cancel();
+        if (shouldCancel) DesktopMain.mouseInput.cancel();
     }
 
     public function close() {
@@ -291,5 +299,6 @@ class Window extends FlxTypedGroup<FlxBasic> {
                 e.camera.scroll.set(-Std.int(e.camera.width - e.width), -Std.int(e.camera.height - e.height));
             }
         }
+        content.onWindowResize(windowWidth, windowHeight);
     }
 }

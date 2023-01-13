@@ -28,9 +28,13 @@ class NoteHitEvent extends CancellableEvent {
      */
     public var note:Note;
     /**
-     * Character that pressed the note
+     * Character that pressed the note.
      */
-    public var character:Character;
+    public var character(get, set):Character;
+    /**
+     * Characters that pressed the note.
+     */
+    public var characters:Array<Character>;
     /**
      * Whenever the Character is a player
      */
@@ -72,13 +76,9 @@ class NoteHitEvent extends CancellableEvent {
      */
     public var rating:String = "sick";
     /**
-     * Scale of ratings.
+     * Whenever a splash should be shown when the note is hit.
      */
-    public var ratingScale:Float = 0.7;
-    /**
-     * Whenever antialiasing should be enabled on ratings.
-     */
-    public var ratingAntialiasing:Bool = true;
+    public var showSplash:Bool = false;
     /**
      * Scale of combo numbers.
      */
@@ -87,31 +87,14 @@ class NoteHitEvent extends CancellableEvent {
      * Whenever antialiasing should be enabled on combo number.
      */
     public var numAntialiasing:Bool = true;
-
     /**
-     * Creates a new NoteHitEvent.
+     * Scale of ratings.
      */
-    public function new(note:Note, character:Character, player:Bool, noteType:String,
-        direction:Int, healthGain:Float, unmuteVocals:Bool = true, score:Int = 350,
-        animSuffix:String = "", rating:String = "sick", ?accuracy:Null<Float>, ratingPrefix:String = "",
-        ratingSuffix:String = "") {
-        super();
-
-        this.note = note;
-        this.character = character;
-        this.player = player;
-        this.noteType = noteType;
-        this.direction = direction;
-        this.healthGain = healthGain;
-        this.unmuteVocals = unmuteVocals;
-        this.score = score;
-        this.animSuffix = animSuffix;
-        this.countAsCombo = !note.isSustainNote && note.mustPress;
-        this.rating = rating;
-        this.accuracy = accuracy;
-        this.ratingPrefix = ratingPrefix;
-        this.ratingSuffix = ratingSuffix;
-    }
+    public var ratingScale:Float = 0.7;
+    /**
+     * Whenever antialiasing should be enabled on ratings.
+     */
+    public var ratingAntialiasing:Bool = true;
 
     /**
      * Prevents the default sing animation from being played.
@@ -176,4 +159,11 @@ class NoteHitEvent extends CancellableEvent {
     }
     @:dox(hide)
     public function cancelStrumGlow() {preventStrumGlow();}
+
+    private inline function get_character() 
+        return characters[0];
+    private function set_character(char:Character) {
+        characters = [char];
+        return char;
+    }
 }

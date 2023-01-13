@@ -1,7 +1,8 @@
 package funkin.menus;
 
+import funkin.github.GitHub;
 import funkin.system.MusicBeatGroup;
-import funkin.system.XMLUtil;
+import funkin.utils.XMLUtil;
 import flixel.util.typeLimit.OneOfThree;
 import flixel.util.typeLimit.OneOfTwo;
 import flixel.FlxG;
@@ -34,6 +35,7 @@ using StringTools;
 class TitleState extends MusicBeatState
 {
 	static var initialized:Bool = false;
+	static var hasCheckedUpdates:Bool = false;
 
 	public var curWacky:Array<String> = [];
 
@@ -70,9 +72,11 @@ class TitleState extends MusicBeatState
 		var bg:FlxSprite = new FlxSprite().makeGraphic(FlxG.width, FlxG.height, FlxColor.BLACK);
 		add(bg);
 
+		#if TITLESCREEN_XML
 		titleScreenSprites = new MusicBeatGroup();
 		add(titleScreenSprites);
 		loadXML();
+		#end
 
 		titleText = new FlxSprite(100, FlxG.height * 0.8);
 		titleText.frames = Paths.getFrames('menus/titlescreen/titleEnter');
@@ -154,24 +158,39 @@ class TitleState extends MusicBeatState
 
 		if (pressedEnter && !transitioning && skippedIntro)
 		{
-			titleText.animation.play('press');
-
-			FlxG.camera.flash(FlxColor.WHITE, 1);
-			CoolUtil.playMenuSFX(1, 0.7);
-
-			transitioning = true;
-			// FlxG.sound.music.stop();
-
-			new FlxTimer().start(2, function(tmr:FlxTimer)
-			{
-				FlxG.switchState(new MainMenuState());
-			});
+			pressEnter();
 		}
 
 		if (pressedEnter && !skippedIntro)
 			skipIntro();
 
 		super.update(elapsed);
+	}
+
+	public function pressEnter() {
+		titleText.animation.play('press');
+
+		FlxG.camera.flash(FlxColor.WHITE, 1);
+		CoolUtil.playMenuSFX(1, 0.7);
+
+		transitioning = true;
+		// FlxG.sound.music.stop();
+
+		new FlxTimer().start(2, function(tmr:FlxTimer)
+		{
+			#if UPDATE_CHECKING
+			var report = hasCheckedUpdates ? null : funkin.updating.UpdateUtil.checkForUpdates();
+			hasCheckedUpdates = true;
+
+			if (report != null && report.newUpdate) {
+				FlxG.switchState(new funkin.updating.UpdateAvailableScreen(report));
+			} else {
+				FlxG.switchState(new MainMenuState());
+			}
+			#else
+			FlxG.switchState(new MainMenuState());
+			#end
+		});
 	}
 
 	public function createCoolText(textArray:Array<String>)

@@ -17,19 +17,19 @@ class Script extends FlxBasic implements IFlxDestroyable {
     public static var staticVariables:Map<String, Dynamic> = [];
 
 
-    public static function getDefaultVariables():Map<String, Dynamic> {
+    public static function getDefaultVariables(?script:Script):Map<String, Dynamic> {
         return [
             // Haxe related stuff
             "Std"               => Std,
             "Math"              => Math,
             "StringTools"       => StringTools,
             "Json"              => haxe.Json,
-    
+
             // OpenFL & Lime related stuff
             "Assets"            => openfl.utils.Assets,
             "Application"       => lime.app.Application,
             "window"            => lime.app.Application.current.window,
-    
+
             // Flixel related stuff
             "FlxG"              => flixel.FlxG,
             "FlxSprite"         => flixel.FlxSprite,
@@ -41,15 +41,16 @@ class Script extends FlxBasic implements IFlxDestroyable {
             "FlxSound"          => flixel.system.FlxSound,
             "FlxAssets"         => flixel.system.FlxAssets,
             "FlxMath"           => flixel.math.FlxMath,
-            "FlxPoint"          => flixel.math.FlxPoint,
             "FlxGroup"          => flixel.group.FlxGroup,
             "FlxTypedGroup"     => flixel.group.FlxGroup.FlxTypedGroup,
             "FlxSpriteGroup"    => flixel.group.FlxSpriteGroup,
             "FlxTypeText"       => flixel.addons.text.FlxTypeText,
             "FlxText"           => flixel.text.FlxText,
-            "FlxAxes"           => flixel.util.FlxAxes,
             "FlxTimer"          => flixel.util.FlxTimer,
-    
+            "FlxPoint"          => CoolUtil.getMacroAbstractClass("flixel.math.FlxPoint"),
+            "FlxAxes"           => CoolUtil.getMacroAbstractClass("flixel.util.FlxAxes"),
+            "FlxColor"          => CoolUtil.getMacroAbstractClass("flixel.util.FlxColor"),
+
             // Engine related stuff
             "engine"            => {
                 build: funkin.macros.BuildCounterMacro.getBuildNumber(),
@@ -59,6 +60,8 @@ class Script extends FlxBasic implements IFlxDestroyable {
             "ModSubState"       => funkin.scripting.ModSubState,
             "PlayState"         => funkin.game.PlayState,
             "GameOverSubstate"  => funkin.game.GameOverSubstate,
+            "HealthIcon"        => funkin.game.HealthIcon,
+            "HudCamera"         => funkin.game.HudCamera,
             "Note"              => funkin.game.Note,
             "Strum"             => funkin.game.Strum,
             "Character"         => funkin.game.Character,
@@ -69,14 +72,20 @@ class Script extends FlxBasic implements IFlxDestroyable {
             "PauseSubState"     => funkin.menus.PauseSubState,
             "StoryMenuState"    => funkin.menus.StoryMenuState,
             "TitleState"        => funkin.menus.TitleState,
+            "Options"           => funkin.options.Options,
             "Paths"             => funkin.system.Paths,
             "Conductor"         => funkin.system.Conductor,
-            "CoolUtil"          => funkin.system.CoolUtil,
-            "XMLUtil"           => funkin.system.XMLUtil,
             "FunkinShader"      => funkin.shaders.FunkinShader,
             "CustomShader"      => funkin.shaders.CustomShader,
             "FunkinText"        => funkin.ui.FunkinText,
             "Alphabet"          => funkin.ui.Alphabet,
+
+            "CoolUtil"          => funkin.utils.CoolUtil,
+            "IniUtil"           => funkin.utils.IniUtil,
+            "XMLUtil"           => funkin.utils.XMLUtil,
+            "ZipUtil"           => funkin.utils.ZipUtil,
+            "MarkdownUtil"      => funkin.utils.MarkdownUtil,
+            "EngineUtil"        => funkin.utils.EngineUtil,
         ];
     }
     public static function getDefaultPreprocessors():Map<String, Dynamic> {
@@ -86,11 +95,16 @@ class Script extends FlxBasic implements IFlxDestroyable {
             "CODENAME_BUILD" => funkin.macros.BuildCounterMacro.getBuildNumber(),
             "desktop" => #if desktop true #else false #end,
             "windows" => #if windows true #else false #end,
+            "hl" => #if hl true #else false #end,
+            "neko" => #if neko true #else false #end,
             "linux" => #if linux true #else false #end,
+            "mac" => #if mac true #else false #end,
             "macos" => #if macos true #else false #end,
             "android" => #if android true #else false #end,
             "web" => #if web true #else false #end,
             "debug" => #if debug true #else false #end,
+            "release" => #if release true #else false #end,
+            "final" => #if final true #else false #end,
             "MOD_SUPPORT" => #if MOD_SUPPORT true #else false #end,
             "GLOBAL_SCRIPT" => #if GLOBAL_SCRIPT true #else false #end,
             "SOFTCODED_STATES" => #if SOFTCODED_STATES true #else false #end,
@@ -149,7 +163,7 @@ class Script extends FlxBasic implements IFlxDestroyable {
         fileName = Path.withoutDirectory(path);
         this.path = path;
         onCreate(path);
-        for(k=>e in getDefaultVariables()) {
+        for(k=>e in getDefaultVariables(this)) {
             set(k, e);
         }
     }

@@ -21,7 +21,7 @@ class FramerateField extends TextField {
      */
     public var debugMode:Bool = false;
 
-    public var peak:UInt = 0;
+    public var peak:Float = 0;
     public var lastFPS:Float = 0;
 
     public function new(x:Float = 10, y:Float = 10, color:Int = 0x000000)
@@ -59,12 +59,13 @@ class FramerateField extends TextField {
             text.push('FPS: ${Std.int(lastFPS)}');
         }
         #if !web
+        var totalMemory = MemoryUtil.currentMemUsage();
         if (showMemory || debugMode) {
-            text.push('RAM: ${CoolUtil.getSizeString(System.totalMemory)}');
+            text.push('RAM: ${CoolUtil.getSizeString(totalMemory)}');
         }
         if (showMemoryPeak || debugMode) {
-            if (peak < System.totalMemory)
-                peak = System.totalMemory;
+            if (peak < totalMemory)
+                peak = totalMemory;
             text.push('RAM PEAK: (${CoolUtil.getSizeString(peak)})');
         }
         #end
@@ -75,6 +76,7 @@ class FramerateField extends TextField {
             text.push('=== CONDUCTOR INFO ===');
             text.push('Current Song Position: ${Conductor.songPosition} (${Conductor.curBeat} beats - ${Conductor.curStep} steps)');
             text.push('Current BPM: ${Conductor.bpm}');
+            text.push('Current speed: ${FlxMath.roundDecimal(Conductor.speed, 2)}x');
             text.push('=== SYSTEM INFO ===');
             text.push('System: ${lime.system.System.platformLabel} ${lime.system.System.platformVersion}');
             text.push('Objs in state: ${FlxG.state.members.length}');

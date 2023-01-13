@@ -10,7 +10,6 @@ import lime.app.Future;
 import lime.app.Promise;
 import lime.media.AudioBuffer;
 import lime.graphics.Image;
-import lime.net.HTTPRequest;
 import lime.text.Font;
 import lime.utils.AssetType;
 import lime.utils.Bytes;
@@ -158,6 +157,23 @@ class ZipFolderLibrary extends AssetLibrary implements ModsAssetLibrary {
                 var fileName = k.substr(_parsedAsset.length);
                 if (!fileName.contains("/"))
                     content.push(fileName);
+            }
+        }
+        return content;
+    }
+
+    public function getFolders(folder:String):Array<String> {
+        var content:Array<String> = [];
+        
+        if (!folder.endsWith("/")) folder = folder + "/";
+        if (!__parseAsset(folder)) return [];
+        
+        @:privateAccess
+        for(k=>e in assets) {
+            if (k.toLowerCase().startsWith(_parsedAsset)) {
+                var fileName = k.substr(_parsedAsset.length);
+                if (fileName.contains("/"))
+                    content.push(fileName.split("/")[0]);
             }
         }
         return content;

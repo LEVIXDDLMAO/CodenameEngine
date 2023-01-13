@@ -1,5 +1,6 @@
 package funkin.desktop.sprites;
 
+import funkin.desktop.DesktopMain.IDesktopFocusableObject;
 import funkin.desktop.theme.Theme;
 import flixel.FlxObject;
 import flixel.addons.ui.FlxUIText;
@@ -7,7 +8,9 @@ import flixel.FlxSprite;
 import flixel.math.FlxPoint;
 import funkin.desktop.windows.WindowGroup;
 
-class Button extends FlxObject {
+using funkin.desktop.DesktopMain;
+
+class Button extends FlxObject implements IDesktopFocusableObject {
     public var callback:Void->Void;
 
     public var disabled:Bool = false;
@@ -29,7 +32,7 @@ class Button extends FlxObject {
         return normalSprite.height;
     }
     
-    public function new(x:Float, y:Float, text:String = "", callback:Void->Void) {
+    public function new(x:Float, y:Float, text:String = "", callback:Void->Void, ?normalButton:ThemeData, ?hoverButton:ThemeData, ?pressedButton:ThemeData, ?disabledButton:ThemeData) {
         super();
         this.x = x; 
         this.y = y;
@@ -37,10 +40,12 @@ class Button extends FlxObject {
         this.height = 24;
         this.callback = callback;
 
-        var normalButton = DesktopMain.theme.normalButton;
-        var hoverButton = DesktopMain.theme.hoverButton;
-        var pressedButton = DesktopMain.theme.pressedButton;
-        var disabledButton = DesktopMain.theme.disabledButton;
+        scrollFactor.set();
+
+        if (normalButton == null) normalButton = DesktopMain.theme.normalButton;
+        if (hoverButton == null) hoverButton = DesktopMain.theme.hoverButton;
+        if (pressedButton == null) pressedButton = DesktopMain.theme.pressedButton;
+        if (disabledButton == null) disabledButton = DesktopMain.theme.disabledButton;
 
         normalSprite = new SpliceSprite(Paths.image(normalButton.sprite), x, y, 75, 24, normalButton.left, normalButton.top, normalButton.bottom, normalButton.right);
         hoverSprite = new SpliceSprite(Paths.image(hoverButton.sprite), x, y, 75, 24, hoverButton.left, hoverButton.top, hoverButton.bottom, hoverButton.right);
@@ -53,15 +58,17 @@ class Button extends FlxObject {
 
     public override function update(elapsed:Float) {
         super.update(elapsed);
-        var mouseInput = DesktopMain.instance.mouseInput;
+        var mouseInput = DesktopMain.mouseInput;
         if (mouseInput.overlaps(normalSprite, camera)) {
             if (mouseInput.justReleased) {
                 callback();
                 return;
             }
 
-            if (mouseInput.justPressed || mouseInput.pressed)
+            if (mouseInput.justPressed || mouseInput.pressed) {
+                this.setFocus();
                 frame = 2;
+            }
             else
                 frame = 1;
             mouseInput.cancel();
@@ -82,6 +89,8 @@ class Button extends FlxObject {
     }
 
     public override function destroy() {
+        DesktopMain.loseFocus(this);
+
         for(e in [normalSprite, hoverSprite, pressedSprite, disabledSprite])
             e.destroy();
         scrollFactor.put();
@@ -103,13 +112,17 @@ class Button extends FlxObject {
             default:    normalSprite;
         };
         spr.resize(width, height);
-        for(sprite in [spr, label]) {
-            sprite.cameras = cameras;
-            sprite.setPosition(x, y);
-            sprite.scrollFactor.set(scrollFactor.x, scrollFactor.y);
-        }
+        for(sprite in [spr, label])
+            sprite.copyProperties(this);
         spr.draw();
         label.y += (height - label.height) / 2;
         label.draw();
+        additionalDraw();
     }
+
+    public function additionalDraw() {}
+
+
+    public function onFocus() {}
+    public function onFocusLost() {}
 }
