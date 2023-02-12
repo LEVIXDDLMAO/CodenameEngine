@@ -7,9 +7,13 @@ Known issues in the beta:
 - Week 6 still have no dialogue
 - Week 7 have no running tankman
 
-Build instructions are below. Press TAB on the main menu to switch mods.
+Build instructions are below. Press TAB on the main menu to switch mods (make sure a mod folder exists or it crashes).
 
 Also, `lime test windows` uses the source assets folder instead of the export one for easier development.
+
+## How to download
+
+Latest builds for the engine can be found in the [Actions](https://github.com/YoshiCrafter29/CodenameEngine/actions) tab.
 
 <details>
   <summary><h2>Credits</h2></summary>

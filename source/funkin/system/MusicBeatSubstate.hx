@@ -17,7 +17,7 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 	private var lastBeat:Float = 0;
 	private var lastStep:Float = 0;
 
-	
+
 	/**
 	 * Current step
 	 */
@@ -27,6 +27,10 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 	  */
 	 public var curBeat(get, never):Int;
 	 /**
+	  * Current beat
+	  */
+	 public var curMeasure(get, never):Int;
+	 /**
 	  * Current step, as a `Float` (ex: 4.94, instead of 4)
 	  */
 	 public var curStepFloat(get, never):Float;
@@ -34,6 +38,10 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 	  * Current beat, as a `Float` (ex: 1.24, instead of 1)
 	  */
 	 public var curBeatFloat(get, never):Float;
+	 /**
+	  * Current beat, as a `Float` (ex: 1.24, instead of 1)
+	  */
+	 public var curMeasureFloat(get, never):Float;
 	 /**
 	  * Current song position (in milliseconds).
 	  */
@@ -43,13 +51,17 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 		 return Conductor.curStep;
 	 inline function get_curBeat():Int
 		 return Conductor.curBeat;
+	 inline function get_curMeasure():Int
+		 return Conductor.curMeasure;
 	 inline function get_curStepFloat():Float
 		 return Conductor.curStepFloat;
 	 inline function get_curBeatFloat():Float
 		 return Conductor.curBeatFloat;
+	 inline function get_curMeasureFloat():Float
+		 return Conductor.curMeasureFloat;
 	 inline function get_songPos():Float
 		 return Conductor.songPosition;
-	 
+
 
 	/**
 	 * Current injected script attached to the state. To add one, create a file at path "data/states/stateName" (ex: "data/states/PauseMenuSubstate.hx")
@@ -60,13 +72,27 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 
 	public var scriptName:String = null;
 
+	/**
+	 * Game Controls. (All players / Solo)
+	 */
+	 public var controls(get, never):Controls;
+
 	 /**
-	  * Game Controls.
+	  * Game Controls (Player 1 only)
 	  */
-	public var controls(get, never):Controls;
+	 public var controlsP1(get, never):Controls;
+	 
+	 /**
+	  * Game Controls (Player 2 only)
+	  */
+	 public var controlsP2(get, never):Controls;
 
 	inline function get_controls():Controls
+		return PlayerSettings.solo.controls;
+	inline function get_controlsP1():Controls
 		return PlayerSettings.player1.controls;
+	inline function get_controlsP2():Controls
+		return PlayerSettings.player2.controls;
 
 
 	public function new(scriptsAllowed:Bool = true, ?scriptName:String) {
@@ -81,7 +107,7 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 			if (stateScript == null || stateScript is DummyScript) {
 				var className = Type.getClassName(Type.getClass(this));
 				var scriptName = this.scriptName != null ? this.scriptName : className.substr(className.lastIndexOf(".")+1);
-		
+
 				stateScript = Script.create(Paths.script('data/states/${scriptName}'));
 				stateScript.setParent(this);
 				stateScript.load();
@@ -163,12 +189,18 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 		call("beatHit", [curBeat]);
 	}
 
+	@:dox(hide) public function measureHit(curMeasure:Int):Void
+	{
+		for(e in members) if (e is IBeatReceiver) cast(e, IBeatReceiver).measureHit(curMeasure);
+		call("measureHit", [curMeasure]);
+	}
+
 	/**
 	 * Shortcut to `FlxMath.lerp` or `CoolUtil.lerp`, depending on `fpsSensitive`
 	 * @param v1 Value 1
 	 * @param v2 Value 2
 	 * @param ratio Ratio
-	 * @param fpsSensitive Whenever the ratio should not be adjusted to run at the same speed independant of framerate.
+	 * @param fpsSensitive Whenever the ratio should not be adjusted to run at the same speed independent of framerate.
 	 */
 	public function lerp(v1:Float, v2:Float, ratio:Float, fpsSensitive:Bool = false) {
 		if (fpsSensitive)
@@ -178,7 +210,7 @@ class MusicBeatSubstate extends FlxSubState implements IBeatReceiver
 	}
 
 	/**
-	 * SCRIPTING STUFF 
+	 * SCRIPTING STUFF
 	 */
 	public override function openSubState(subState:FlxSubState) {
 		var e = event("onOpenSubState", EventManager.get(StateEvent).recycle(subState));

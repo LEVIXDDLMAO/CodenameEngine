@@ -4,6 +4,10 @@ import funkin.scripting.DummyScript;
 import flixel.addons.transition.FlxTransitionableState;
 import funkin.scripting.Script;
 
+/**
+ * Substate made for scripted cutscenes.
+ * To add cutscenes to your songs, add a `cutscene.hx` file in your song's directory (ex: `songs/song/cutscene.hx`)
+ */
 class ScriptedCutscene extends Cutscene {
     var script:Script;
 
@@ -47,7 +51,9 @@ class ScriptedCutscene extends Cutscene {
         script.call("destroy");
         super.destroy();
     }
-
+    
+    // VIDEOS
+    #if REGION
     public function startVideo(path:String, ?callback:Void->Void) {
         persistentDraw = false;
         openSubState(new VideoCutscene(path, function() {
@@ -55,4 +61,26 @@ class ScriptedCutscene extends Cutscene {
                 callback();
         }));
     }
+
+    public var isVideoPlaying(get, null):Bool;
+
+    private inline function get_isVideoPlaying()
+        return subState is VideoCutscene;
+    #end
+
+    // DIALOGUE
+    #if REGION
+    public function startDialogue(path:String, ?callback:Void->Void) {
+        persistentDraw = true;
+        openSubState(new VideoCutscene(path, function() {
+            if (callback != null)
+                callback();
+        }));
+    }
+
+    public var isDialoguePlaying(get, null):Bool;
+
+    private inline function get_isDialoguePlaying()
+        return subState is DialogueCutscene;
+    #end
 }

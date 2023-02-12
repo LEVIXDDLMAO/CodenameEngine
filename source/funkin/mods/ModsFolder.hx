@@ -1,5 +1,6 @@
 package funkin.mods;
 
+import funkin.options.Options;
 import funkin.menus.TitleState;
 import funkin.system.Main;
 import openfl.utils.AssetCache;
@@ -72,7 +73,11 @@ class ModsFolder {
      */
     public static function switchMod(mod:String) {
         unloadMod(ModsFolder.currentModFolder);
-        Paths.assetsTree.addLibrary(loadMod(ModsFolder.currentModFolder = mod));
+        Options.lastLoadedMod = ModsFolder.currentModFolder = mod;
+        Options.save();
+        if (ModsFolder.currentModFolder == null) return;
+        
+        Paths.assetsTree.addLibrary(loadMod(ModsFolder.currentModFolder));
 
         Main.refreshAssets();
         onModSwitch.dispatch(ModsFolder.currentModFolder);
@@ -80,8 +85,9 @@ class ModsFolder {
             FlxG.sound.music.fadeOut(0.25, 0, function(t) {
                 FlxG.sound.music.stop();
             });
+        DiscordUtil.reloadJsonData();
         TitleState.initialized = false;
-        FlxG.switchState(new TitleState());
+        FlxG.switchState(new TitleState()); 
     }
 
     public static function unloadMod(mod:String) {

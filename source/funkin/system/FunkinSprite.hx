@@ -69,6 +69,7 @@ class FunkinSprite extends FlxSprite implements IBeatReceiver implements IOffset
         if (Assets.exists('$noExt/Animation.json')
             && Assets.exists('$noExt/spritemap1.json')
             && Assets.exists('$noExt/spritemap1.png')) {
+                Assets.cache.clear(noExt);
                 atlasPath = noExt;
                 animateAtlas = new FlxAnimate(x, y, noExt);
             }
@@ -85,6 +86,7 @@ class FunkinSprite extends FlxSprite implements IBeatReceiver implements IOffset
         }
     }
     public function stepHit(curBeat:Int) {}
+	public function measureHit(curMeasure:Int) {}
 
     public override function getScreenBounds(?newRect:FlxRect, ?camera:FlxCamera):FlxRect {
         __doPreZoomScaleProcedure(camera);

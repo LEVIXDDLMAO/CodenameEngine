@@ -24,6 +24,8 @@ typedef SwagSong =
 
 	// ADDITIONAL STUFF THAT MAY NOT BE PRESENT IN CHART
 	var ?maxHealth:Float;
+	var ?beatsPerMesure:Float;
+	var ?stepsPerBeat:Float;
 }
 
 class Song
@@ -34,11 +36,7 @@ class Song
 		PlayState.fromMods = Paths.assetsTree.existsSpecific(assetPath, "TEXT", MODS);
 		var rawJson = Assets.getText(assetPath).trim();
 
-		while (!rawJson.endsWith("}"))
-		{
-			rawJson = rawJson.substr(0, rawJson.length - 1);
-			// LOL GOING THROUGH THE BULLSHIT TO CLEAN IDK WHATS STRANGE
-		}
+		rawJson = rawJson.substr(0, rawJson.lastIndexOf('}') + 1);
 
 		return parseJSONshit(rawJson);
 	}

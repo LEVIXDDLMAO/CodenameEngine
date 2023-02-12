@@ -41,6 +41,9 @@ class Paths
 	static public function video(key:String) {
 		return getPath('videos/$key.mp4', BINARY, null);
 	}
+	static public function ndll(key:String) {
+		return getPath('ndlls/$key.ndll', BINARY, null);
+	}
 
 	static public function getLibraryPath(file:String, library = "default")
 	{
@@ -110,13 +113,13 @@ class Paths
 
 	inline static public function voices(song:String, difficulty:String = "normal")
 	{
-		var diff = getPath('songs/${song.toLowerCase()}/song/Voices-$difficulty.$SOUND_EXT', MUSIC, null);
+		var diff = getPath('songs/${song.toLowerCase()}/song/Voices-${difficulty.toLowerCase()}.$SOUND_EXT', MUSIC, null);
 		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/song/Voices.$SOUND_EXT', MUSIC, null);
 	}
 
 	inline static public function inst(song:String, difficulty:String = "normal")
 	{
-		var diff = getPath('songs/${song.toLowerCase()}/song/Inst-$difficulty.$SOUND_EXT', MUSIC, null);
+		var diff = getPath('songs/${song.toLowerCase()}/song/Inst-${difficulty.toLowerCase()}.$SOUND_EXT', MUSIC, null);
 		return OpenFlAssets.exists(diff) ? diff : getPath('songs/${song.toLowerCase()}/song/Inst.$SOUND_EXT', MUSIC, null);
 	}
 
@@ -254,7 +257,7 @@ class Paths
 		var content:Array<String> = [];
 		#if MOD_SUPPORT
 		if (library is funkin.mods.ModsAssetLibrary) {
-			// easy task, can immediatly scan for files!
+			// easy task, can immediately scan for files!
 			var lib = cast(library, funkin.mods.ModsAssetLibrary);
 			content = lib.getFiles(libThing.symbolName);
 			if (addPath) 

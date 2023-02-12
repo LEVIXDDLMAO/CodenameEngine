@@ -27,6 +27,7 @@ import flash.geom.ColorTransform;
 
 using StringTools;
 
+@:allow(funkin.game.PlayState)
 class CoolUtil
 {
 	/*
@@ -61,7 +62,7 @@ class CoolUtil
 			var f:Null<Dynamic> = Reflect.field(v, name);
 			if (f != null)
 				return cast f;
-		} 
+		}
 		Reflect.setField(v, name, defaultValue);
 		return defaultValue;
 	}
@@ -90,7 +91,7 @@ class CoolUtil
 	 * @param color1 Color 1
 	 * @param color2 Color 2
 	 * @param ratio Ratio
-	 * @param fpsSensitive Whenever the ratio should be case sentivive (adapted when game is running at 120 instead of 60)
+	 * @param fpsSensitive Whenever the ratio should be fps sensitive (adapted when game is running at 120 instead of 60)
 	 */
 	public static inline function lerpColor(color1:FlxColor, color2:FlxColor, ratio:Float, fpsSensitive:Bool = false) {
 		if (!fpsSensitive)
@@ -114,7 +115,7 @@ class CoolUtil
 	public static function getColorFromDynamic(c:Dynamic):Null<FlxColor> {
 		// -1
 		if (c is Int) return c;
-		
+
 		// -1.0
 		if (c is Float) return Std.int(c);
 
@@ -167,23 +168,36 @@ class CoolUtil
 		var infoPath = '${Path.withoutExtension(path)}.ini';
 		if (Assets.exists(infoPath)) {
 			var musicInfo = IniUtil.parseAsset(infoPath, [
-				"BPM" => null
+				"BPM" => null,
+				"TimeSignature" => "2/2"
 			]);
+
+			var timeSignParsed:Array<Null<Float>> = musicInfo["TimeSignature"] == null ? [] : [for(s in musicInfo["TimeSignature"].split("/")) Std.parseFloat(s)];
+			var beatsPerMesure:Float = 4;
+			var stepsPerBeat:Float = 4;
+
+			if (timeSignParsed.length == 2 && !timeSignParsed.contains(null)) {
+				beatsPerMesure = timeSignParsed[0] == null || timeSignParsed[0] <= 0 ? 4 : cast timeSignParsed[0];
+				stepsPerBeat = timeSignParsed[1] == null || timeSignParsed[1] <= 0 ? 4 : cast timeSignParsed[1];
+			}
+
 			var parsedBPM:Null<Float> = Std.parseFloat(musicInfo["BPM"]);
-			Conductor.changeBPM(parsedBPM == null ? DefaultBPM : parsedBPM);
+			Conductor.changeBPM(parsedBPM == null ? DefaultBPM : parsedBPM, beatsPerMesure, stepsPerBeat);
 		} else
 			Conductor.changeBPM(DefaultBPM);
 	}
+
 	/**
 	 * Plays a specified Menu SFX.
 	 * @param menuSFX Menu SFX to play
 	 * @param volume At which volume it should play
 	 */
-	public static function playMenuSFX(menuSFX:Int = 0, volume:Float = 1) {
+	public static function playMenuSFX(menuSFX:CoolSfx = SCROLL, volume:Float = 1) {
 		FlxG.sound.play(Paths.sound(switch(menuSFX) {
-			case 1:		'menu/confirm';
-			case 2:		'menu/cancel';
-			default: 	'menu/scroll';
+			case CONFIRM:	'menu/confirm';
+			case CANCEL:	'menu/cancel';
+			case SCROLL:	'menu/scroll';
+			default: 		'menu/scroll';
 		}), volume);
 	}
 
@@ -192,7 +206,7 @@ class CoolUtil
 		return [for(e in Assets.getText(path).trim().split('\n')) e.trim()];
 	}
 
-	public static inline function numberArray(max:Int, ?min = 0):Array<Int>
+	public static inline function numberArray(max:Int, ?min:Int = 0):Array<Int>
 	{
 		return [for (i in min...max) i];
 	}
@@ -258,20 +272,23 @@ class CoolUtil
 			case Y:
 				obj.y = (cam.height - obj.height) / 2;
 			case NONE:
-				
+
 		}
 	}
 
 	public static function loadWeek(weekData:WeekData, difficulty:String = "normal") {
-        PlayState.storyWeek = weekData;
-        PlayState.storyPlaylist = [for(e in weekData.songs) e.name];
-        PlayState.isStoryMode = true;
+		PlayState.storyWeek = weekData;
+		PlayState.storyPlaylist = [for(e in weekData.songs) e.name];
+		PlayState.isStoryMode = true;
 		PlayState.campaignScore = 0;
+		PlayState.opponentMode = PlayState.coopMode = false;
 		__loadSong(PlayState.storyPlaylist[0], difficulty);
 	}
-	public static function loadSong(name:String, difficulty:String = "normal") {
+	public static function loadSong(name:String, difficulty:String = "normal", opponentMode:Bool = false, coopMode:Bool = false) {
 		PlayState.campaignScore = 0;
 		PlayState.isStoryMode = false;
+		PlayState.opponentMode = opponentMode;
+		PlayState.coopMode = coopMode;
 		__loadSong(name, difficulty);
 	}
 	public static function __loadSong(name:String, difficulty:String) {
@@ -299,7 +316,7 @@ class CoolUtil
 			var frames = FlxAtlasFrames.findFrame(graphic);
 			if (frames != null)
 				return frames;
-			
+
 			trace("no frames yet for multiple atlases!!");
 			var spritesheets = [];
 			var cur = 1;
@@ -331,10 +348,10 @@ class CoolUtil
 			return null;
 		return graph.imageFrame;
 	}
-	
+
 	public static function loadAnimatedGraphic(spr:FlxSprite, path:String) {
 		spr.frames = loadFrames(path);
-		
+
 		if (spr.frames != null && spr.frames.frames != null) {
 			spr.animation.add("idle", [for(i in 0...spr.frames.frames.length) i], 24, true);
 			spr.animation.play("idle");
@@ -376,7 +393,7 @@ class CoolUtil
 	public static function clear<T>(array:Array<T>):Array<T> {
 		while(array.length > 0)
 			array.shift();
-		return array;	
+		return array;
 	}
 
 	public static function pushGroup<T>(array:Array<T>, ...args:T):Array<T> {
@@ -384,4 +401,10 @@ class CoolUtil
 			array.push(a);
 		return array;
 	}
+}
+
+enum abstract CoolSfx(Int) from Int {
+	var SCROLL = 0;
+	var CONFIRM = 1;
+	var CANCEL = 2;
 }

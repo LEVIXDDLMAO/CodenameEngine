@@ -11,9 +11,6 @@ import flixel.math.FlxRect;
 import flixel.math.FlxPoint;
 import funkin.system.Conductor;
 import funkin.scripting.events.*;
-#if polymod
-import polymod.format.ParseRules.TargetSignatureElement;
-#end
 
 using StringTools;
 
@@ -21,7 +18,19 @@ class Note extends FlxSprite
 {
 	public var strumTime:Float = 0;
 
-	public var mustPress:Bool = false;
+	public var mustPress(get, never):Bool;
+	public var strumLine(get, never):StrumLine;
+	private function get_strumLine() {
+		if (PlayState.instance != null)
+			return PlayState.instance.players[strumLineID];
+		return null;
+	}
+
+	private function get_mustPress():Bool {
+		if (PlayState.instance != null)
+			return PlayState.instance.players[strumLineID] != null && !PlayState.instance.players[strumLineID].cpu;
+		return strumLineID == 1;
+	}
 	public var noteData:Int = 0;
 	public var canBeHit:Bool = false;
 	public var tooLate:Bool = false;
@@ -63,6 +72,7 @@ class Note extends FlxSprite
 	public var flipSustain:Bool = true;
 
 	public var noteTypeID:Int = 0;
+	public var strumLineID:Int = 0;
 
 	// TO APPLY THOSE ON A SINGLE NOTE
 	public var scrollSpeed:Null<Float> = null;
@@ -83,7 +93,7 @@ class Note extends FlxSprite
 
 	public var animSuffix:String = "";
 
-	public function new(strumTime:Float, noteData:Int, noteType:Int = 0, mustPress:Bool = true, ?prevNote:Note, ?sustainNote:Bool = false, animSuffix:String = "")
+	public function new(strumTime:Float, noteData:Int, noteType:Int = 0, strumLineID:Int = 1, ?prevNote:Note, ?sustainNote:Bool = false, animSuffix:String = "")
 	{
 		super();
 
@@ -91,7 +101,7 @@ class Note extends FlxSprite
 			prevNote = this;
 
 		this.prevNote = prevNote;
-		this.mustPress = mustPress;
+		this.strumLineID = strumLineID;
 		this.noteTypeID = noteType;
 		isSustainNote = sustainNote;
 
@@ -103,7 +113,7 @@ class Note extends FlxSprite
 		this.noteData = noteData;
 
 		var customType = Paths.image('game/notes/${this.noteType}');
-		var event = EventManager.get(NoteCreationEvent).recycle(this, strumID, this.noteType, noteTypeID, mustPress, Assets.exists(customType) ? 'game/notes/${this.noteType}' : 'game/NOTE_assets', 0.7, animSuffix);
+		var event = EventManager.get(NoteCreationEvent).recycle(this, strumID, this.noteType, noteTypeID, strumLineID, mustPress, Assets.exists(customType) ? 'game/notes/${this.noteType}' : 'game/notes/default', 0.7, animSuffix);
 
 		if (PlayState.instance != null)
 			event = PlayState.instance.scripts.event("onNoteCreation", event);
@@ -164,6 +174,7 @@ class Note extends FlxSprite
 
 	public var lastScrollSpeed:Null<Float> = null;
 	public var angleOffsets:Bool = true;
+	public var useAntialiasingFix:Bool = false;
 
 	/**
 	 * Whenever the position of the note should be relative to the strum position or not.
@@ -176,8 +187,6 @@ class Note extends FlxSprite
 		@:privateAccess if (__strumCameras != null) FlxCamera._defaultCameras = __strumCameras;
 		
 		var negativeScroll = isSustainNote && nextSustain != null && lastScrollSpeed < 0;
-		if (antialiasing && nextSustain == null)
-			rotOffset.y += 2;
 		if (negativeScroll)	offset.y *= -1;
 
 		if (__strum != null && strumRelativePos) {
@@ -204,8 +213,6 @@ class Note extends FlxSprite
 		}
 
 		if (negativeScroll)	offset.y *= -1;
-		if (antialiasing && nextSustain == null)
-			rotOffset.y -= 2;
 		@:privateAccess FlxCamera._defaultCameras = oldDefaultCameras;
 	}
 
@@ -226,9 +233,9 @@ class Note extends FlxSprite
 
 			scale.y = (stepLength * (0.45 * FlxMath.roundDecimal(scrollSpeed, 2))) / frameHeight;
 			updateHitbox();
-			if (antialiasing && !FlxG.forceNoAntialiasing) {
+			if (useAntialiasingFix) {
 				// dumbass antialiasing
-				scale.y += 3 / frameHeight;
+				scale.y += 1 / frameHeight;
 			}
 		}
 

@@ -39,6 +39,8 @@ class Main extends Sprite
 {
 	public static var instance:Main;
 
+	public static var scaleMode:FunkinRatioScaleMode;
+
 	var gameWidth:Int = 1280; // Width of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var gameHeight:Int = 720; // Height of the game in pixels (might be less / more in actual pixels depending on your zoom).
 	var zoom:Float = -1; // If -1, zoom is automatically calculated to fit the window dimensions.
@@ -98,13 +100,14 @@ class Main extends Sprite
 		}
 
 
-		addChild(new FlxGame(gameWidth, gameHeight, null, zoom, framerate, framerate, skipSplash, startFullscreen));
+		addChild(new FunkinGame(gameWidth, gameHeight, null, zoom, framerate, framerate, skipSplash, startFullscreen));
 		loadGameSettings();
 		// FlxG.switchState(new TitleState());
 		FlxG.switchState(new funkin.menus.BetaWarningState());
 
 		#if !mobile
-		addChild(new FramerateField(10, 3, 0xFFFFFF));
+		// addChild(new FramerateField(10, 3, 0xFFFFFF));
+		addChild(new funkin.system.framerate.Framerate());
 		#end
 	}
 
@@ -129,6 +132,7 @@ class Main extends Sprite
 	}
 
 	public function loadGameSettings() {
+		MemoryUtil.init();
 		@:privateAccess
 		FlxG.game.getTimer = getTimer;
 		#if ALLOW_MULTITHREADING
@@ -146,9 +150,6 @@ class Main extends Sprite
 		ModsFolder.init();
 		DesktopMain.init();
 		DiscordUtil.init();
-		#if ALLOW_MULTITASKING
-		funkin.multitasking.MultiTaskingHandler.init();
-		#end
 		#if GLOBAL_SCRIPT
 		funkin.scripting.GlobalScript.init();
 		#end
@@ -193,7 +194,7 @@ class Main extends Sprite
 		Assets.registerLibrary('default', lib);
 
 		funkin.options.PlayerSettings.init();
-		FlxG.save.bind('Codename Engine');
+		FlxG.save.bind('Codename-Engine');
 		Options.load();
 		Highscore.load();
 
@@ -201,14 +202,17 @@ class Main extends Sprite
 
 		refreshAssets();
 
+		FlxG.scaleMode = scaleMode = new FunkinRatioScaleMode();
+
 		Conductor.init();
 		AudioSwitchFix.init();
 		WindowsAPI.setDarkMode(true);
 		EventManager.init();
-		FlxG.signals.preStateCreate.add(onStateSwitch);
+		FlxG.signals.preStateSwitch.add(onStateSwitch);
+		FlxG.signals.postStateSwitch.add(onStateSwitchPost);
 
 		#if MOD_SUPPORT
-		ModsFolder.switchMod("introMod");
+		ModsFolder.switchMod(Options.lastLoadedMod);
 		#end
 
 		initTransition();
@@ -232,14 +236,27 @@ class Main extends Sprite
 			{asset: diamond, width: 32, height: 32}, new FlxRect(-200, -200, FlxG.width * 1.4, FlxG.height * 1.4));
 	}
 
-	private static function onStateSwitch(newState:FlxState) {
+	private static function onStateSwitch() {
+		scaleMode.resetSize();
+	}
+
+	private static function onStateSwitchPost() {
 		// manual asset clearing since base openfl one doesnt clear lime one
 		// doesnt clear bitmaps since flixel fork does it auto
 
+		@:privateAccess {
+			// clear uint8 pools
+			for(length=>pool in openfl.display3D.utils.UInt8Buff._pools) {
+				for(b in pool.clear())
+					b.destroy();
+			}
+			openfl.display3D.utils.UInt8Buff._pools.clear();
+		}
+
 		var cache = cast(Assets.cache, AssetCache);
-		for (key=>font in cache.font)
+		for (key=>_ in cache.font)
 			cache.removeFont(key);
-		for (key=>sound in cache.sound)
+		for (key=>_ in cache.sound)
 			cache.removeSound(key);
 
 		Paths.assetsTree.clearCache();

@@ -28,6 +28,13 @@ class CharacterEditor extends WindowContent {
     public var menuBar:MenuBar;
 
     /**
+     * SILHOUETTES
+     */
+    public var silhouetteDad:Character;
+    public var silhouetteGf:Character;
+    public var silhouetteBf:Character;
+
+    /**
      * ANIMATION TAB
      */
     public var animsDropDown:DropDown;
@@ -65,17 +72,26 @@ class CharacterEditor extends WindowContent {
         // stage
         var bg = new FlxSprite(-600, -200).loadAnimatedGraphic(Paths.image('stages/default/stageback'));
         bg.scrollFactor.set(0.9, 0.9);
-
         var stageFront = new FlxSprite(-600, 600).loadAnimatedGraphic(Paths.image('stages/default/stagefront'));
+        silhouetteDad = new Character(100, 100, "dad", false);
+        silhouetteGf = new Character(400, 130, "gf", false);
+        silhouetteGf.scrollFactor.set(0.95, 0.95);
+        silhouetteBf = new Character(770, 100, "bf", true);
+
+        for (e in [silhouetteDad, silhouetteGf, silhouetteBf]) {
+            e.color = 0xFF000000;
+            e.visible = false;
+            e.alpha = 0.25;
+        }
+
+        for (e in [bg, stageFront, silhouetteDad, silhouetteGf, silhouetteBf]) {
+            e.antialiasing = true;
+            add(e);
+        }
 
         char = new Character(100, 100, curCharacter, false, false);
-
-        for(e in [bg, stageFront])
-            e.antialiasing = true;
-        add(bg);
-        add(stageFront);
         add(char);
-        
+
         title = 'Character Editor - ${char.curCharacter}.xml';
 
         // character setup & following
@@ -143,13 +159,16 @@ class CharacterEditor extends WindowContent {
                         callback: resetCamZoom
                     },
                     {
-                        name: "Show a Boyfriend Silouhette"
+                        name: "Toggle Boyfriend Silhouette",
+                        callback: toggleSilBF
                     },
                     {
-                        name: "Show a Dad Silouhette"
+                        name: "Toggle Dad Silhouette",
+                        callback: toggleSilDad
                     },
                     {
-                        name: "Show a Girlfriend Silouhette"
+                        name: "Toggle Girlfriend Silhouette",
+                        callback: toggleSilGF
                     }
                 ]
             },
@@ -197,7 +216,7 @@ class CharacterEditor extends WindowContent {
         content.push(animPrefixInput = new InputBox(10, label.y + label.height, 380, ""));
 
         content.push(animLoopCheckbox = new Checkbox(10, animPrefixInput.y + animPrefixInput.height + 10, 380, "Loop"));
-        
+
         content.push(label = new WindowText(10, animLoopCheckbox.y + animLoopCheckbox.height + 10, 0, "Animation FPS (Frames per second)"));
         content.push(animFpsStepper = new NumericStepper(10, label.y + label.height, 380, 0));
 
@@ -207,7 +226,7 @@ class CharacterEditor extends WindowContent {
 
         for(e in [animOffsetX, animOffsetY])
             e.increment = 10;
-        
+
         for(spr in content)
             tabView.tabs[0].add(spr);
     }
@@ -221,18 +240,18 @@ class CharacterEditor extends WindowContent {
 
         content.push(label = new WindowText(10, content.last().y + content.last().height, 0, "Icon Name (images/icons/)"));
         content.push(charIconInput = new InputBox(10, label.y + label.height, 380, char.icon.getDefault("")));
-        
+
         content.push(charIsPlayerCheckbox = new Checkbox(10, content.last().y + content.last().height + 10, 380, "Playable character"));
         content.push(label = new WindowText(10, content.last().y + content.last().height, 380, "(Offsets are automatically fixed when playing as a non-playable character and vice versa)"));
         charIsPlayerCheckbox.checked = char.xml.getAtt("isPlayer") == "true";
-        
+
         content.push(charIsGFCheckbox = new Checkbox(10, content.last().y + content.last().height + 10, 380, "Is Girlfriend"));
         content.push(label = new WindowText(10, content.last().y + content.last().height, 380, "(Characters marked as Girlfriend will replace GF when used as opponent)"));
         charIsGFCheckbox.checked = char.isGF;
-        
+
         content.push(charFlipXCheckbox = new Checkbox(10, content.last().y + content.last().height + 10, 380, "Flip Horizontally"));
         charFlipXCheckbox.checked = char.__baseFlipped != char.isPlayer;
-        
+
         for(spr in content)
             tabView.tabs[1].add(spr);
     }
@@ -306,7 +325,7 @@ class CharacterEditor extends WindowContent {
     /**
      * =========== CONTEXT MENU OPTIONS ===========
      */
-    
+
     /**
      * View
      */
@@ -317,4 +336,11 @@ class CharacterEditor extends WindowContent {
     public function resetCamZoom() {
         windowCamera.zoom = 1;
     }
+
+    /**
+     * Silhouettes
+     */
+    public function toggleSilBF() silhouetteBf.visible = !silhouetteBf.visible;
+    public function toggleSilDad() silhouetteDad.visible = !silhouetteDad.visible;
+    public function toggleSilGF() silhouetteGf.visible = !silhouetteGf.visible;
 }

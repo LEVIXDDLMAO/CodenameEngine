@@ -40,6 +40,8 @@ class CommandLineHandler {
                         Sys.exit(0);
                     }
                 #end
+                case "-livereload":
+                    // do nothing
                 default:
                     Sys.println("Unknown command");
             }

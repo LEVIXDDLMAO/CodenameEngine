@@ -7,13 +7,13 @@ function onDance(event) {
 }
 
 function onPlaySingAnim(event) {
-    dir = FlxG.random.int(0, 1) + (event.direction == 0 ? 1 : 3);
+    dir = FlxG.random.int(0, 1) + (event.direction == 0 ? 3 : 1);
     event.cancel();
 
     playAnim("shoot" + Std.string(dir), true);
 }
 
 function update(elapsed) {
-    if (animation.curAnim == null || (animation.curAnim.name.substr(0, 5) == "shoot" && animation.curAnim.finished))
+    if (getAnimName() == null || (getAnimName().substr(0, 5) == "shoot" && isAnimFinished()))
         dance();
 }

@@ -12,6 +12,25 @@ import neko.vm.Gc;
 import openfl.system.System;
 
 class MemoryUtil {
+	public static var disableCount:Int = 0;
+
+	public static function askDisable() {
+		disableCount++;
+		if (disableCount > 0)
+			disable();
+		else
+			enable();
+	}
+	public static function askEnable() {
+		disableCount--;
+		if (disableCount > 0)
+			disable();
+		else
+			enable();
+	}
+
+	public static function init() {}
+	
 	public static function clearMinor() {
 		#if (cpp || java || neko)
 		Gc.run(false);
@@ -48,6 +67,27 @@ class MemoryUtil {
 		return cast(cast(System.totalMemory, UInt), Float);
 		#else
 		return 0;
+		#end
+	}
+
+	private static var _nb:Int = 0;
+	private static var _nbD:Int = 0;
+	private static var _zombie:Dynamic;
+
+	public static function destroyFlixelZombies() {
+		#if cpp
+		// Gc.enterGCFreeZone();
+
+		while ((_zombie = Gc.getNextZombie()) != null) {
+			_nb++;
+			if (_zombie is flixel.util.FlxDestroyUtil.IFlxDestroyable) {
+				flixel.util.FlxDestroyUtil.destroy(cast(_zombie, flixel.util.FlxDestroyUtil.IFlxDestroyable));
+				_nbD++;
+			}
+		}
+		Sys.println('Zombies: ${_nb}; IFlxDestroyable Zombies: ${_nbD}');
+
+		// Gc.exitGCFreeZone();
 		#end
 	}
 }
