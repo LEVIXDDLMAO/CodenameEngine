@@ -1,67 +1,70 @@
 package funkin.menus.credits;
 
-import flixel.graphics.FlxGraphic;
-import flixel.FlxG;
-import openfl.display.BitmapData;
-import flixel.FlxSprite;
-import flixel.addons.transition.FlxTransitionableState;
-import funkin.github.GitHub;
-import funkin.menus.MainMenuState;
+import funkin.backend.system.github.GitHub;
+import funkin.options.type.PortraitOption;
 
-class CreditsCodename extends MusicBeatState {
-    public var contributorsSprites:Array<FlxSprite> = [];
-    public var contributorsAvatars:Array<FlxGraphic> = [];
-    public var avatarLoadListId:Int = 0;
-    public override function create() {
-        super.create();
+using StringTools;
 
-		var bg:FlxSprite = new FlxSprite(-80).loadAnimatedGraphic(Paths.image('menus/menuBGBlue'));
-        bg.scrollFactor.set();
-		bg.scale.set(1.15, 1.15);
-		bg.updateHitbox();
-		bg.screenCenter();
-		bg.antialiasing = true;
-		add(bg);
+class CreditsCodename extends funkin.options.OptionsScreen {
+	public override function new()
+	{
+		super("Codename Engine", "All the contributors of the engine! - Press RESET to update the list (One reset per 2 minutes).");
+		checkUpdate();
+		displayList();
+	}
 
-        var contributors = GitHub.getContributors("YoshiCrafter29", "CodenameEngine", function(e) {
-            trace(e);
-        });
-        for(k=>c in contributors) {
-            var spr = new FlxSprite(0, k * 50);
-            spr.antialiasing = true;
-            spr.setUnstretchedGraphicSize(50, 50, false);
-            contributorsSprites.push(spr);
-            add(spr);
-        }
+	public override function update(elapsed:Float) {
+		if (funkin.options.PlayerSettings.solo.controls.RESET && checkUpdate()) {
+			displayList();
+			updateMenuDesc();
+		}
+		super.update(elapsed);
+	}
 
-        Main.execAsync(function() {
-            for(k=>c in contributors) {
-                var bytes = GitHub.__requestBytesOnGitHubServers('${c.avatar_url}&size=64');
-                var bmap = BitmapData.fromBytes(bytes);
-                contributorsAvatars.push(FlxG.bitmap.add(bmap, false, 'GITHUB-USER:${c.login}'));
-                if (destroyed) return;
-            }
-        });
-    }
+	var error:Bool = false;
+	public function checkUpdate():Bool {
+		var curTime:Float = Date.now().getTime();
+		if(Options.lastUpdated != null && curTime < Options.lastUpdated + 120000) return false;  // Fuck you Github rate limits  - Nex_isDumb
+		Options.lastUpdated = curTime;
 
-    public override function update(elapsed:Float) {
-        super.update(elapsed);
-        if (controls.BACK) {
-            CoolUtil.playMenuSFX(CANCEL);
-            FlxTransitionableState.skipNextTransIn = FlxTransitionableState.skipNextTransOut = true;
-            FlxG.switchState(new MainMenuState());
-        }
-        if (avatarLoadListId < contributorsAvatars.length) {
-            for(i in avatarLoadListId...contributorsAvatars.length) {
-                var v = contributorsSprites[i];
-                v.loadGraphic(contributorsAvatars[i]);
-                v.setUnstretchedGraphicSize(50, 50, false);
-            }
-            avatarLoadListId = contributorsAvatars.length;
-        }
-    }
+		error = false;
+		//Main.execAsync(function() {
+		var idk = GitHub.getContributors("FNF-CNE-Devs", "CodenameEngine", function(e) {
+			error = true;
+			var errMsg:String = ~/\d+.\d+.\d+.\d+/.replace(e.message, "[Your IP]");  // Removing sensitive stuff  - Nex_isDumb
+			errMsg = 'Error while trying to download contributors list:\n$errMsg';
 
-    public override function destroy() {
-        super.destroy();
-    }
+			Logs.traceColored([Logs.logText(errMsg.replace('\n', ' '), RED)], ERROR);
+			funkin.backend.utils.NativeAPI.showMessageBox("Codename Engine Warning", errMsg, MSG_WARNING);
+		});
+		//});
+		if(error) return false;
+		
+		Options.contributors = idk;
+		trace('List Updated!');
+		return true;
+	}
+
+	public function displayList() {
+		//if (curSelected > Options.contributors.length - 1) changeSelection(-(curSelected - (Options.contributors.length - 1)));
+		if (curSelected > Options.contributors.length - 1) curSelected = Options.contributors.length - 1;
+		changeSelection(0, true);
+		
+		while (members.length > 0) {
+			members[0].destroy();
+			remove(members[0], true);
+		}
+
+		var totalContributions = 0;
+		for(c in Options.contributors) totalContributions += c.contributions;
+		for(c in Options.contributors) {
+			var opt:PortraitOption = new PortraitOption(
+				c.login,
+				'Total Contributions: ${c.contributions} / ${totalContributions} (${FlxMath.roundDecimal(c.contributions / totalContributions * 100, 2)}%) - Select to open GitHub account',
+				function() CoolUtil.openURL(c.html_url)
+			);
+			if(!error) opt.loadFromGithub(c);
+			add(opt);
+		}
+	}
 }
